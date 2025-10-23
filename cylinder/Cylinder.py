@@ -369,7 +369,7 @@ class Cylinder(object):
         #smeshObj_2.SetName( 'Walls' ) ### not created Object
         Mesh_1 = smesh.Mesh(Shell_1_1,'Mesh_1')
         Regular_1D = Mesh_1.Segment()
-        Number_of_Segments_1 = Regular_1D.NumberOfSegments(15)
+        Number_of_Segments_1 = Regular_1D.NumberOfSegments(self.n_seg)
         Quadrangle_2D = Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
         Inlet_1 = Mesh_1.GroupOnGeom(Inlet,'Inlet',SMESH.FACE)
         isDone = Mesh_1.Compute()
