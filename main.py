@@ -7,7 +7,7 @@ Outil de génération de maillage sur Salomé
 """
 from Cylinder import Cylinder
 
-cyl  = Cylinder(radius=10,height=20,square_length=5,n_seg_length=10,n_seg_axial=20,n_seg_circum=15,mesh_format="stl",filename="Mesh",
+cyl  = Cylinder(radius=10,height=10,csquare_length=5,csquare_radius=3,n_seg=20,z_steps=10,mesh_format="stl",filename="Mesh",
                 output_dir=r"D:\SALOME")
 cyl.build_mesh()
 
