@@ -37,7 +37,7 @@ csquare_length = 5
 csquare_radius = 20
 radius = 8
 height = 30
-z_steps = 15
+sq_nb_seg = 30
 
 ###
 ### This part is generated automatically by SALOME v9.15.0 with dump python functionality
@@ -189,119 +189,20 @@ geompy.addToStudyInFather( Shell_1, Wall, 'Wall' )
 
 import SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
-
-
 import salome
 import GEOM
-import SMESH
-from salome.smesh import smeshBuilder
-import math
-
-# smesh = smeshBuilder.New()
-
-# height = 50
-
-# n_xy_values = [1, 2,3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-
-# results = []
-
-# for n_xy in n_xy_values:
-#     Mesh_1 = smesh.Mesh(Shell_1, f"Mesh_{n_xy}")
-
-#     Regular_1D = Mesh_1.Segment()
-
-#     # Segments pour le carré
-#     NbSegXY = smesh.CreateHypothesis('NumberOfSegments')
-#     NbSegXY.SetNumberOfSegments(15)
-
-#     # Segments pour le bord du cylindre
-#     NbSegRadial = smesh.CreateHypothesis('NumberOfSegments')
-#     NbSegRadial.SetNumberOfSegments(n_xy) 
-#     NbSegRadial.SetScaleFactor(2)
-
-#     # Tri des arêtes
-#     edges = geompy.ExtractShapes(Shell_1, geompy.ShapeType["EDGE"], True)
-#     edges_carre = []
-#     edges_cercle = []
-#     edges_radiales = []
-
-#     for e in edges:
-#         vertices = geompy.ExtractShapes(e, geompy.ShapeType["VERTEX"], True)
-#         v1, v2 = vertices[0], vertices[1]
-#         x1, y1, z1 = geompy.PointCoordinates(v1)
-#         x2, y2, z2 = geompy.PointCoordinates(v2)
-#         r1 = math.hypot(x1, y1)
-#         r2 = math.hypot(x2, y2)
-
-#         if abs(r1 - r2) < 1e-6:
-#             edges_cercle.append(e)
-#         elif max(r1, r2) < 0.6 * max(r1, r2, r1, r2):
-#             edges_carre.append(e)
-#         else:
-#             edges_radiales.append(e)
-
-#     for e in edges_carre + edges_cercle:
-#         Mesh_1.AddHypothesis(NbSegXY, e)
-
-#     for e in edges_radiales:
-#         Mesh_1.AddHypothesis(NbSegRadial, e)
-
-#     Quadrangle_2D = Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
-#     Inlet_1 = Mesh_1.GroupOnGeom(Inlet, 'Inlet', SMESH.FACE)
-#     Wall_1 = Mesh_1.GroupOnGeom(Wall, 'Wall', SMESH.EDGE)
-
-#     # Calcul du maillage
-#     isDone = Mesh_1.Compute()
-#     if not isDone:
-#         print(f"Échec du maillage pour {n_xy} segments.")
-#         continue
-
-#     # Calcul de l’aspect ratio sur INLET 
-#     inlet_group = None
-#     for g in Mesh_1.GetGroups():
-#         if g.GetName() == "Inlet":
-#             inlet_group = g
-#             break
-
-#     if inlet_group is None:
-#         raise ValueError("Le groupe 'Inlet' n'a pas été trouvé dans le maillage.")
-
-#     inlet_ids = inlet_group.GetIDs()
-
-#     ar_list = []
-#     for elem_id in inlet_ids:
-#         ar = Mesh_1.GetAspectRatio(elem_id)
-#         if ar < 1.0:
-#             ar = 1.0 / ar
-#         ar_list.append(ar)
-
-#     mean_ar = sum(ar_list) / len(ar_list)
-#     results.append((n_xy, mean_ar))
-
-# # Résumé final
-# print("\nRésumé des résultats")
-# for n_xy, mean_ar in results:
-#     print(f"{n_xy} segments donne AR moyen = {mean_ar:.4f}")
-
-# best = min(results, key=lambda x: x[1])
-# print(f"\nNombre de segments optimal = {best[0]} (AR moyen = {best[1]:.4f})")
-
-
-import salome
-import GEOM
-import SMESH
-from salome.smesh import smeshBuilder
 import math
 
 smesh = smeshBuilder.New()
 
-height = 50
 
-# === Paramètres à tester ===
-n_xy_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+# Paramètres à tester
+n_xy_values = np.arange(1, sq_nb_seg, 1).tolist()
+
 
 results = []
-meshes = {}  # pour stocker les maillages calculés
+meshes = {}  
 
 for n_xy in n_xy_values:
 
@@ -311,12 +212,12 @@ for n_xy in n_xy_values:
 
     # Segments sur carré/cercle
     NbSegXY = smesh.CreateHypothesis('NumberOfSegments')
-    NbSegXY.SetNumberOfSegments(15)
+    NbSegXY.SetNumberOfSegments(sq_nb_seg)
 
     # Segments sur les rayons
     NbSegRadial = smesh.CreateHypothesis('NumberOfSegments')
     NbSegRadial.SetNumberOfSegments(n_xy)  
-    NbSegRadial.SetScaleFactor(4)
+    NbSegRadial.SetScaleFactor(2)
 
     # Tri des arêtes
     edges = geompy.ExtractShapes(Shell_1, geompy.ShapeType["EDGE"], True)
@@ -382,8 +283,8 @@ for n_xy in n_xy_values:
 
 
 print("\nRésumé des résultats")
-for n_xy, mean_ar in results:
-    print(f"{n_xy} segments, AR moyen = {mean_ar:.4f}")
+# for n_xy, mean_ar in results:
+#     print(f"{n_xy} segments, AR moyen = {mean_ar:.4f}")
 
 # Sélection du meilleur maillage
 best = min(results, key=lambda x: x[1])
@@ -403,89 +304,18 @@ Mesh_1.SetName("Mesh")
 print("\nMaillage optimal conservé sous le nom 'Mesh'.")
 
 
-# smesh = smeshBuilder.New()
-
-# n_xy = 15
-# height = 50
-
-# Mesh_1 = smesh.Mesh(Shell_1, 'Mesh_1')
-
-# # Hypothèses 1D
-# Regular_1D = Mesh_1.Segment()
-
-# # Deux hypothèses : 15 et 10 segments
-# NbSeg15 = smesh.CreateHypothesis('NumberOfSegments')
-# NbSeg15.SetNumberOfSegments(15)
-
-# NbSeg13 = smesh.CreateHypothesis('NumberOfSegments')
-# NbSeg13.SetNumberOfSegments(9)
-# NbSeg13.SetScaleFactor(4)
-
-# edges = geompy.ExtractShapes(Shell_1, geompy.ShapeType["EDGE"], True)
-
-# edges_carre = []
-# edges_cercle = []
-# edges_radiales = []
-
-# for e in edges:
-#     vertices = geompy.ExtractShapes(e, geompy.ShapeType["VERTEX"], True)
-#     v1, v2 = vertices[0], vertices[1]
-    
-#     x1, y1, z1 = geompy.PointCoordinates(v1)
-#     x2, y2, z2 = geompy.PointCoordinates(v2)
-
-#     r1 = (x1**2 + y1**2)**0.5
-#     r2 = (x2**2 + y2**2)**0.5
-
-#     if abs(r1 - r2) < 1e-6:
-#         edges_cercle.append(e)
-#     elif max(r1, r2) < 0.6 * max(r1, r2, r1, r2):
-#         edges_carre.append(e)
-#     else:
-#         edges_radiales.append(e)
-
-
-# for e in edges_carre + edges_cercle:
-#     Mesh_1.AddHypothesis(NbSeg15, e)
-
-# for e in edges_radiales:
-#     Mesh_1.AddHypothesis(NbSeg13, e)
-
-# Quadrangle_2D = Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
-# Inlet_1 = Mesh_1.GroupOnGeom(Inlet, 'Inlet', SMESH.FACE)
-# Wall_1 = Mesh_1.GroupOnGeom(Wall, 'Wall', SMESH.EDGE)
-# isDone = Mesh_1.Compute()
-# Mesh_1.CheckCompute()
-# [Inlet_1, Wall_1] = Mesh_1.GetGroups()
-
-# # Aspect Ratio statistics on INLET group
-# inlet_group = Mesh_1.GroupOnGeom(Inlet, "INLET", SMESH.FACE)
-# inlet_ids = inlet_group.GetIDs()
-# ar_list = []
-
-# for elem_id in inlet_ids:
-#     ar = Mesh_1.GetAspectRatio(elem_id)
-#     if ar < 1.0:
-#         ar = 1.0 / ar
-#     ar_list.append(ar)
-
-# mean_ar = sum(ar_list) / len(ar_list)
-# print("Aspect Ratio statistics for INLET group :")
-# print("Mean Aspect Ratio =", mean_ar)
-# print("AR Min =", min(ar_list), "\nAR Max =", max(ar_list))
-
 # Extrusion
-edge_length = math.pi * radius / 2 
-mesh_size_xy = edge_length / n_xy
+edge_length = math.pi * radius / 2 / n_xy
+center_length = csquare_length / sq_nb_seg
+mesh_size_xy = (edge_length + center_length) / 2
 n_z = math.ceil(height / mesh_size_xy)
 step_height = height / n_z
+print(f"Longueur au bord {edge_length:.2f}")
+print(f"Longueur au centre {center_length:.2f}")
+print(f"Pas d'extrusion {step_height:.2f}")
+
 
 Mesh_1.ExtrusionSweepObjects( [ Mesh_1 ], [ Mesh_1 ], [ Mesh_1 ], [ 0, 0, step_height], n_z, 1, [  ], 1, [  ], [  ], 0 )
-
-
-
-
-
 
 
 for grp in Mesh_1.GetGroups():
