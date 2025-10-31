@@ -8,30 +8,37 @@ import math
 import SALOMEDS
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
-import numpy as np
 
 
 class Cylinder(object):
     """
-    
+    Class that creates a hexahedral structured mesh of cylindrical reactor using the SALOME software version 9.15.0.
+    The structured mesh is created by dividing the cylinder base in 5 faces. A middle section made of 
+    a curvilinial square and 4 arcs of a circle.
+
     """
 
     def __init__(self, radius, height, curv_square_length,curv_square_radius,sq_nb_seg,mesh_format,filename,output_dir):
         """ Initialize the attributes """
 
+        # Cylinder parameters
         self.radius = radius
         self.height = height
-    
+
+        # Curvilinial square parameters
         self.csquare_length = curv_square_length
         self.csquare_radius = curv_square_radius
 
-        self.sq_nb_seg = sq_nb_seg 
-        
+        # Mesh parameters
+        self.sq_nb_seg = sq_nb_seg  
         self.mesh_format = mesh_format
+
+        # Output parameters
         self.filename = filename
         self.output_dir = output_dir
 
     def arc_centers(self,x1, y1, x2, y2, r, normal_dir):
+        """Computes the arc centers when given 2 points and the radius of the arc"""
 
         mx, my = (x1 + x2) / 2, (y1 + y2) / 2
         dx, dy = x2 - x1, y2 - y1
@@ -56,15 +63,16 @@ class Cylinder(object):
 
     def build_mesh(self):
         """
+        The main function of the class. It builds the mesh using SALOME functionalities. 
+        It first creates the 2D geometry and geometrical components. Then for the mesh generation
+        it uses an optimization algorithm in order to achieve a Mean Aspect Ratio as close as possible to 1.
+        Once the optimal mesh is computed an extrusion is made and the file is exported to the user-given destination.  
         """
 
         salome.salome_init()
         notebook = salome_notebook.NoteBook()
 
-        ###
         ### GEOM component
-        ###
-
 
         geompy = geomBuilder.New()
 
@@ -83,7 +91,7 @@ class Cylinder(object):
         Vertex_3 = geompy.MakeVertex(-x_cyl, -y_cyl, 0)
         Vertex_4 = geompy.MakeVertex(x_cyl, -y_cyl, 0)
 
-        # Make the vertices of the curvilignial square
+        # Make the vertices of the curvilinial square
         Vertex_5 = geompy.MakeVertex(self.csquare_length / 2, self.csquare_length / 2, 0)
         Vertex_6 = geompy.MakeVertex(-self.csquare_length / 2, self.csquare_length / 2, 0)
         Vertex_7 = geompy.MakeVertex(-self.csquare_length / 2, -self.csquare_length / 2, 0)
@@ -99,7 +107,7 @@ class Cylinder(object):
         Arc_1_vertex_2 = geompy.GetSubShape(Arc_1, [2])
         Arc_4 = geompy.MakeArcCenter(O, Arc_3_vertex_3, Arc_1_vertex_2,False)
 
-        # Make vertices for the centers of the curvilignial square arcs
+        # Make vertices for the centers of the curvilinial square arcs
         Cx1,Cy1 = self.arc_centers(geompy.PointCoordinates(Vertex_5)[0],geompy.PointCoordinates(Vertex_5)[1],
                                     geompy.PointCoordinates(Vertex_6)[0],geompy.PointCoordinates(Vertex_6)[1],self.csquare_radius,(0,-1))
         Cx2,Cy2 = self.arc_centers(geompy.PointCoordinates(Vertex_7)[0],geompy.PointCoordinates(Vertex_7)[1],
@@ -135,10 +143,12 @@ class Cylinder(object):
         Face_5 = geompy.MakeFaceWires([Arc_5, Arc_6, Arc_7, Arc_8], 1)
         Shell_1 = geompy.MakeShell([Face_1, Face_2, Face_3, Face_4, Face_5])
 
+        # Create the inlet group
         Inlet = geompy.CreateGroup(Shell_1, geompy.ShapeType["FACE"])
         face_ids = geompy.SubShapeAllIDs(Shell_1, geompy.ShapeType["FACE"])
         geompy.UnionIDs(Inlet, face_ids)
 
+        #Create the wall group
         Wall = geompy.CreateGroup(Shell_1, geompy.ShapeType["EDGE"])  
         outer_edge_length = 0.5 * math.pi * self.radius
         edges = geompy.SubShapeAll(Shell_1, geompy.ShapeType["EDGE"])
@@ -146,6 +156,7 @@ class Cylinder(object):
         outer_edges_ids = [geompy.GetSubShapeID(Shell_1, e) for e in outer_edges] 
         geompy.UnionIDs(Wall, outer_edges_ids)
 
+        # Add all the objects to the study (used if the SALOME GUI is opened)
         geompy.addToStudy( O, 'O' )
         geompy.addToStudy( OX, 'OX' )
         geompy.addToStudy( OY, 'OY' )
@@ -193,13 +204,12 @@ class Cylinder(object):
         geompy.addToStudyInFather( Shell_1, Inlet, 'Inlet' )
         geompy.addToStudyInFather( Shell_1, Wall, 'Wall' )
 
-        ###
         ### SMESH component
-        ###
+    
         smesh = smeshBuilder.New()
 
-        # Test parameters
-        n_xy_values = np.arange(1, self.sq_nb_seg, 1).tolist()
+        # Test parameters in order to find the optimal mesh
+        n_xy_values = list(range(1,self.sq_nb_seg))
 
         results = []
         meshes = {}  
@@ -283,8 +293,8 @@ class Cylinder(object):
 
 
         print("\nResults summary :")
-        # for n_xy, mean_ar in results:
-        #     print(f"{n_xy} segments, Mean AR = {mean_ar:.4f}")
+        for n_xy, mean_ar in results:
+            print(f"{n_xy} segments, Mean AR = {mean_ar:.4f}")
 
         # Optimal mesh selection
         best = min(results, key=lambda x: x[1])
@@ -292,7 +302,7 @@ class Cylinder(object):
         best_ar = best[1]
         print(f"\nOptimal segments number = {best_n_xy} (Mean AR = {best_ar:.4f})")
 
-        # Deletion of the non-optimal meshes
+        # Removal of the non-optimal meshes
         for n_xy, mesh in meshes.items():
             if n_xy != best_n_xy:
                 smesh.RemoveMesh(mesh)
@@ -325,25 +335,23 @@ class Cylinder(object):
                 grp.SetName("Wall")
 
         
-        # === EXPORT MESH TO FILE ===
+        # Export Mesh to file
 
         # Choose export directory and file name
-        output_dir = self.output_dir
-        filename = self.filename
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
 
         if self.mesh_format == "med":
-            export_path = os.path.join(output_dir, self.filename +".med")
+            export_path = os.path.join(self.output_dir, self.filename +".med")
             Mesh_1.ExportMED(export_path, auto_groups=True, minor=40)
             print(f"Mesh exported to: {export_path}")
         
         elif self.mesh_format == "unv":
-            export_path = os.path.join(output_dir, self.filename +".unv")
+            export_path = os.path.join(self.output_dir, self.filename +".unv")
             Mesh_1.ExportUNV(export_path)
             print(f"Mesh exported to: {export_path}")
 
         elif self.mesh_format == "stl":
-            export_path = os.path.join(output_dir,self.filename + ".stl")
+            export_path = os.path.join(self.output_dir,self.filename + ".stl")
             Mesh_1.ExportSTL(export_path)
             print(f"Mesh exported to: {export_path}")
         
