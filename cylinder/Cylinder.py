@@ -8,6 +8,7 @@ import math
 import SALOMEDS
 import  SMESH, SALOMEDS
 from salome.smesh import smeshBuilder
+import numpy as np
 
 
 class Cylinder(object):
@@ -15,17 +16,17 @@ class Cylinder(object):
     
     """
 
-    def __init__(self, radius, height, curv_square_length,curv_square_radius,n_seg,z_steps,mesh_format,filename,output_dir):
+    def __init__(self, radius, height, curv_square_length,curv_square_radius,sq_nb_seg,mesh_format,filename,output_dir):
         """ Initialize the attributes """
+
         self.radius = radius
         self.height = height
     
         self.csquare_length = curv_square_length
         self.csquare_radius = curv_square_radius
 
-        self.n_seg = n_seg ## Change to number of cells once figure out how
-        self.z_steps = z_steps
-
+        self.sq_nb_seg = sq_nb_seg 
+        
         self.mesh_format = mesh_format
         self.filename = filename
         self.output_dir = output_dir
@@ -37,10 +38,10 @@ class Cylinder(object):
         d = math.hypot(dx, dy)
         
         if d > 2 * r:
-            raise ValueError("No valid circle — points too far apart for this radius.")
+            raise ValueError(" Curvilignial square creation Error : No valid circle arc — points too far apart for this radius.")
         
         h = math.sqrt(r**2 - (d / 2)**2)
-        nx, ny = -dy / d, dx / d  # perpendicular direction (unit)
+        nx, ny = -dy / d, dx / d  # perpendicular direction
         
         # Two possible centers
         c1 = (mx + h * nx, my + h * ny)
@@ -57,17 +58,14 @@ class Cylinder(object):
         """
         """
 
-        ###
-        ### This part is generated automatically by SALOME v9.15.0 with dump python functionality
-        ###
-
         salome.salome_init()
         notebook = salome_notebook.NoteBook()
-        sys.path.insert(0, r'D:/Universite/Master_2/Projet num')
 
         ###
         ### GEOM component
         ###
+
+
         geompy = geomBuilder.New()
 
         O = geompy.MakeVertex(0, 0, 0)
@@ -91,6 +89,7 @@ class Cylinder(object):
         Vertex_7 = geompy.MakeVertex(-self.csquare_length / 2, -self.csquare_length / 2, 0)
         Vertex_8 = geompy.MakeVertex(self.csquare_length / 2, -self.csquare_length / 2, 0)
 
+
         Arc_1 = geompy.MakeArcCenter(O, Vertex_2, Vertex_1,False)
         Arc_1_vertex_3 = geompy.GetSubShape(Arc_1, [3])
         Arc_2 = geompy.MakeArcCenter(O, Arc_1_vertex_3, Vertex_4,False)
@@ -102,14 +101,14 @@ class Cylinder(object):
 
         # Make vertices for the centers of the curvilignial square arcs
         Cx1,Cy1 = self.arc_centers(geompy.PointCoordinates(Vertex_5)[0],geompy.PointCoordinates(Vertex_5)[1],
-                                   geompy.PointCoordinates(Vertex_6)[0],geompy.PointCoordinates(Vertex_6)[1],self.radius,(0,-1))
+                                    geompy.PointCoordinates(Vertex_6)[0],geompy.PointCoordinates(Vertex_6)[1],self.csquare_radius,(0,-1))
         Cx2,Cy2 = self.arc_centers(geompy.PointCoordinates(Vertex_7)[0],geompy.PointCoordinates(Vertex_7)[1],
-                                   geompy.PointCoordinates(Vertex_8)[0],geompy.PointCoordinates(Vertex_8)[1],self.radius,(0,1))
+                                    geompy.PointCoordinates(Vertex_8)[0],geompy.PointCoordinates(Vertex_8)[1],self.csquare_radius,(0,1))
         Cx3,Cy3 = self.arc_centers(geompy.PointCoordinates(Vertex_6)[0],geompy.PointCoordinates(Vertex_6)[1],
-                                   geompy.PointCoordinates(Vertex_7)[0],geompy.PointCoordinates(Vertex_7)[1],self.radius,(1,0))
+                                    geompy.PointCoordinates(Vertex_7)[0],geompy.PointCoordinates(Vertex_7)[1],self.csquare_radius,(1,0))
         Cx4,Cy4 = self.arc_centers(geompy.PointCoordinates(Vertex_5)[0],geompy.PointCoordinates(Vertex_5)[1],
-                                   geompy.PointCoordinates(Vertex_8)[0],geompy.PointCoordinates(Vertex_8)[1],self.radius,(-1,0))
-        
+                                    geompy.PointCoordinates(Vertex_8)[0],geompy.PointCoordinates(Vertex_8)[1],self.csquare_radius,(-1,0))
+
         Vertex_9 = geompy.MakeVertex(Cx2, Cy2, 0)
         Vertex_10 = geompy.MakeVertex(Cx1, Cy1, 0)
         Vertex_11 = geompy.MakeVertex(Cx3, Cy3, 0)
@@ -135,17 +134,18 @@ class Cylinder(object):
         Face_4 = geompy.MakeFaceWires([Arc_4, Arc_7, Line_1, Line_4], 1)
         Face_5 = geompy.MakeFaceWires([Arc_5, Arc_6, Arc_7, Arc_8], 1)
         Shell_1 = geompy.MakeShell([Face_1, Face_2, Face_3, Face_4, Face_5])
+
         Inlet = geompy.CreateGroup(Shell_1, geompy.ShapeType["FACE"])
-        geompy.UnionIDs(Inlet, [2, 12, 19, 26, 30])
-        Wall = geompy.CreateGroup(Shell_1, geompy.ShapeType["EDGE"])
-        geompy.UnionIDs(Wall, [7, 14, 21, 28])
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
-        [Inlet, Wall] = geompy.GetExistingSubObjects(Shell_1, False)
+        face_ids = geompy.SubShapeAllIDs(Shell_1, geompy.ShapeType["FACE"])
+        geompy.UnionIDs(Inlet, face_ids)
+
+        Wall = geompy.CreateGroup(Shell_1, geompy.ShapeType["EDGE"])  
+        outer_edge_length = 0.5 * math.pi * self.radius
+        edges = geompy.SubShapeAll(Shell_1, geompy.ShapeType["EDGE"])
+        outer_edges = [e for e in edges if abs(geompy.BasicProperties(e)[0] - outer_edge_length) < 1e-3 ]  
+        outer_edges_ids = [geompy.GetSubShapeID(Shell_1, e) for e in outer_edges] 
+        geompy.UnionIDs(Wall, outer_edges_ids)
+
         geompy.addToStudy( O, 'O' )
         geompy.addToStudy( OX, 'OX' )
         geompy.addToStudy( OY, 'OY' )
@@ -196,41 +196,134 @@ class Cylinder(object):
         ###
         ### SMESH component
         ###
-        
         smesh = smeshBuilder.New()
-        #smesh.SetEnablePublish( False ) # Set to False to avoid publish in study if not needed or in some particular situations:
-                                        # multiples meshes built in parallel, complex and numerous mesh edition (performance)
 
-        #smeshObj_1.SetName( 'Outlet' ) ### not created Object
-        Mesh_1 = smesh.Mesh(Shell_1,'Mesh_1')
-        Regular_1D = Mesh_1.Segment()
-        Number_of_Segments_1 = Regular_1D.NumberOfSegments(15)
-        Quadrangle_2D = Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
-        Inlet_1 = Mesh_1.GroupOnGeom(Inlet,'Inlet',SMESH.FACE)
-        isDone = Mesh_1.Compute()
-        Mesh_1.CheckCompute()
-        
-        [ smeshObj_2, Wall_1, Outlet, smeshObj_3 ] = Mesh_1.ExtrusionSweepObjects( [ Mesh_1 ], [ Mesh_1 ], [ Mesh_1 ], [ 0, 0, self.height ], self.z_steps, 1, [  ], 0, [  ], [  ], 0 )
-        Mesh_1.RemoveGroup( smeshObj_3 )
-        Mesh_1.RemoveGroup( smeshObj_2 )
-        Outlet.SetName( 'Outlet' )
-        Wall_1.SetName( 'Wall' )
+        # Test parameters
+        n_xy_values = np.arange(1, self.sq_nb_seg, 1).tolist()
 
-        ## some objects were removed
-        aStudyBuilder = salome.myStudy.NewBuilder()
-        SO = salome.myStudy.FindObjectIOR(salome.myStudy.ConvertObjectToIOR(smeshObj_3))
-        if SO: aStudyBuilder.RemoveObjectWithChildren(SO)
-        SO = salome.myStudy.FindObjectIOR(salome.myStudy.ConvertObjectToIOR(smeshObj_2))
-        if SO: aStudyBuilder.RemoveObjectWithChildren(SO)
+        results = []
+        meshes = {}  
 
-        ## Set names of Mesh objects
-        smesh.SetName(Inlet_1, 'Inlet')
-        smesh.SetName(Wall_1, 'Wall')
-        smesh.SetName(Number_of_Segments_1, 'Number of Segments_1')
-        smesh.SetName(Mesh_1.GetMesh(), 'Mesh_1')
-        smesh.SetName(Outlet, 'Outlet')
-        smesh.SetName(Regular_1D.GetAlgorithm(), 'Regular_1D')
-        smesh.SetName(Quadrangle_2D.GetAlgorithm(), 'Quadrangle_2D')
+        for n_xy in n_xy_values:
+
+            # Mesh computing
+            Mesh_1 = smesh.Mesh(Shell_1, f"Mesh_{n_xy}")
+            Regular_1D = Mesh_1.Segment()
+
+            # Circle/square segments
+            NbSegXY = smesh.CreateHypothesis('NumberOfSegments')
+            NbSegXY.SetNumberOfSegments(self.sq_nb_seg)
+
+            # Radial segments
+            NbSegRadial = smesh.CreateHypothesis('NumberOfSegments')
+            NbSegRadial.SetNumberOfSegments(n_xy)  
+            NbSegRadial.SetScaleFactor(2)
+
+            # Edges filtering
+            edges = geompy.ExtractShapes(Shell_1, geompy.ShapeType["EDGE"], True)
+            square_edges = []
+            circle_edges = []
+            radial_edges = []
+
+            for e in edges:
+                vertices = geompy.ExtractShapes(e, geompy.ShapeType["VERTEX"], True)
+                v1, v2 = vertices[0], vertices[1]
+                x1, y1, z1 = geompy.PointCoordinates(v1)
+                x2, y2, z2 = geompy.PointCoordinates(v2)
+                r1 = math.hypot(x1, y1)
+                r2 = math.hypot(x2, y2)
+
+                if abs(r1 - r2) < 1e-6:
+                    circle_edges.append(e)
+                else:
+                    radial_edges.append(e)
+
+            for e in square_edges + circle_edges:
+                Mesh_1.AddHypothesis(NbSegXY, e)
+
+            for e in radial_edges:
+                Mesh_1.AddHypothesis(NbSegRadial, e)
+
+            # 2D Quadrangles
+            Quadrangle_2D = Mesh_1.Quadrangle(algo=smeshBuilder.QUADRANGLE)
+
+            # Geometrical groups
+            Inlet_1 = Mesh_1.GroupOnGeom(Inlet, 'Inlet', SMESH.FACE)
+            Wall_1 = Mesh_1.GroupOnGeom(Wall, 'Wall', SMESH.EDGE)
+
+            # Mesh computing
+            isDone = Mesh_1.Compute()
+            if not isDone:
+                print(f"Mesh failed for {n_xy} segments.")
+                continue
+
+            # Computing of the aspect ration on the INLET
+            inlet_group = None
+            for g in Mesh_1.GetGroups():
+                if g.GetName() == "Inlet":
+                    inlet_group = g
+                    break
+
+            if inlet_group is None:
+                print(f"Group 'Inlet' not found for {n_xy} segments.")
+                continue
+
+            inlet_ids = inlet_group.GetIDs()
+
+            ar_list = []
+            for elem_id in inlet_ids:
+                ar = Mesh_1.GetAspectRatio(elem_id)
+                if ar < 1.0:
+                    ar = 1.0 / ar
+                ar_list.append(ar)
+
+            mean_ar = sum(ar_list) / len(ar_list)
+            results.append((n_xy, mean_ar))
+            meshes[n_xy] = Mesh_1
+
+
+        print("\nResults summary :")
+        # for n_xy, mean_ar in results:
+        #     print(f"{n_xy} segments, Mean AR = {mean_ar:.4f}")
+
+        # Optimal mesh selection
+        best = min(results, key=lambda x: x[1])
+        best_n_xy = best[0]
+        best_ar = best[1]
+        print(f"\nOptimal segments number = {best_n_xy} (Mean AR = {best_ar:.4f})")
+
+        # Deletion of the non-optimal meshes
+        for n_xy, mesh in meshes.items():
+            if n_xy != best_n_xy:
+                smesh.RemoveMesh(mesh)
+
+        # Renaming of the optimal Mesh
+        Mesh_1 = meshes[best_n_xy]
+        Mesh_1.SetName("Mesh")
+
+        # Extrusion
+        edge_length = math.pi * self.radius / 2 / n_xy
+        center_length = self.csquare_length / self.sq_nb_seg
+        mesh_size_xy = (edge_length + center_length) / 2
+        n_z = math.ceil(self.height / mesh_size_xy)
+        step_height = self.height / n_z
+
+        print(f"Edge length : {edge_length:.2f}")
+        print(f"Center length : {center_length:.2f}")
+        print(f"Extrusion step : {step_height:.2f}")
+
+        Mesh_1.ExtrusionSweepObjects( [ Mesh_1 ], [ Mesh_1 ], [ Mesh_1 ], [ 0, 0, step_height], n_z, 1, [  ], 1, [  ], [  ], 0 )
+
+        for grp in Mesh_1.GetGroups():
+            if grp.GetType() == SMESH.EDGE:   
+                Mesh_1.RemoveGroup(grp)
+            elif grp.GetType() == SMESH.VOLUME:
+                Mesh_1.RemoveGroup(grp)
+            elif grp.GetName() == "Inlet_top":
+                grp.SetName("Outlet")
+            elif grp.GetName() == "Wall_extruded":
+                grp.SetName("Wall")
+
         
         # === EXPORT MESH TO FILE ===
 
