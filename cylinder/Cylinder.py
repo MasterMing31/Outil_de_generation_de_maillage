@@ -1,4 +1,5 @@
 import sys
+import toml
 import salome
 import salome_notebook
 import os
@@ -18,24 +19,28 @@ class Cylinder(object):
 
     """
 
-    def __init__(self, radius, height, curv_square_length,curv_square_radius,sq_nb_seg,mesh_format,filename,output_dir):
+    def __init__(self, file):
         """ Initialize the attributes """
 
+        with open(file, mode='r') as toml_file:
+            dict_inputs = toml.load(toml_file)
+
         # Cylinder parameters
-        self.radius = radius
-        self.height = height
+        self.radius = dict_inputs['Geometry']['Cylinder radius']
+        self.height = dict_inputs['Geometry']['Cylinder height']
 
         # Curvilinial square parameters
-        self.csquare_length = curv_square_length
-        self.csquare_radius = curv_square_radius
+        self.csquare_length = dict_inputs['Geometry']['Square side length']
+        self.csquare_radius = dict_inputs['Geometry']['Square arc radius']
 
         # Mesh parameters
-        self.sq_nb_seg = sq_nb_seg  
-        self.mesh_format = mesh_format
+        self.sq_nb_seg = dict_inputs['Mesh']['Nb segments in square']
+        self.nseg_extrusion = dict_inputs['Mesh']['Nb segments for extrusion']
 
         # Output parameters
-        self.filename = filename
-        self.output_dir = output_dir
+        self.mesh_format = dict_inputs['File parameters']['File format']
+        self.filename = dict_inputs['File parameters']['Filename']
+        self.output_dir = dict_inputs['File parameters']['File directory']
 
     def arc_centers(self,x1, y1, x2, y2, r, normal_dir):
         """Computes the arc centers when given 2 points and the radius of the arc"""
@@ -96,7 +101,6 @@ class Cylinder(object):
         Vertex_6 = geompy.MakeVertex(-self.csquare_length / 2, self.csquare_length / 2, 0)
         Vertex_7 = geompy.MakeVertex(-self.csquare_length / 2, -self.csquare_length / 2, 0)
         Vertex_8 = geompy.MakeVertex(self.csquare_length / 2, -self.csquare_length / 2, 0)
-
 
         Arc_1 = geompy.MakeArcCenter(O, Vertex_2, Vertex_1,False)
         Arc_1_vertex_3 = geompy.GetSubShape(Arc_1, [3])
@@ -315,7 +319,11 @@ class Cylinder(object):
         edge_length = math.pi * self.radius / 2 / n_xy
         center_length = self.csquare_length / self.sq_nb_seg
         mesh_size_xy = (edge_length + center_length) / 2
-        n_z = math.ceil(self.height / mesh_size_xy)
+        if self.nseg_extrusion == "Auto" :
+            n_z = math.ceil(self.height / mesh_size_xy)
+        else :
+            n_z = self.nseg_extrusion
+
         step_height = self.height / n_z
 
         print(f"Edge length : {edge_length:.2f}")
@@ -336,8 +344,6 @@ class Cylinder(object):
 
         
         # Export Mesh to file
-
-        # Choose export directory and file name
         os.makedirs(self.output_dir, exist_ok=True)
 
         if self.mesh_format == "med":
