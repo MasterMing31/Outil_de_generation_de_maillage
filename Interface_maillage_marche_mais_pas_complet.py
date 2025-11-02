@@ -12,12 +12,10 @@ class Mesh(Frame):
 
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(expand=True, fill="both")
-
         self.grid()
         self.geometry_params = {}
         self.mesh_params = {}
         self.choice = tk.StringVar(value="create")
-
         self.file_path = tk.StringVar()
         self.cyl_radius = Variable()
         self.cyl_height = Variable()
@@ -31,7 +29,6 @@ class Mesh(Frame):
         self.file_format = StringVar()
         self.file_name = StringVar()
         self.output_dir = StringVar()
-
         self.first()
         self.create_tab3()
 
@@ -98,16 +95,13 @@ class Mesh(Frame):
         geom = data.get("Geometry", {})
         mesh = data.get("Mesh", {})
         file_params = data.get("File parameters", {})
-
         self.cyl_radius.set(geom.get("Cylinder radius", ""))
         self.cyl_height.set(geom.get("Cylinder height", ""))
         self.sq_length.set(geom.get("Square side length", ""))
         self.sq_radius.set(geom.get("Square arc radius", ""))
-
         self.sq_segments.set(mesh.get("Nb segments in square", ""))
         self.extrusion_value.set(mesh.get("Nb segments for extrusion", ""))
         self.mesh_type.set(mesh.get("Mesh Fineness", ""))
-
         self.file_name.set(file_params.get("Filename", ""))
         self.file_format.set(file_params.get("File format", ""))
         self.output_dir.set(file_params.get("File directory", ""))
@@ -115,10 +109,8 @@ class Mesh(Frame):
     def second_win(self):
         second_window = tk.Toplevel(self)
         second_window.title("Parameters")
-
         self.notebook = ttk.Notebook(second_window)
         self.notebook.pack(expand=True, fill="both")
-
         self.create_tab1()
         self.create_tab2()
         self.create_tab3()
@@ -127,28 +119,20 @@ class Mesh(Frame):
     def create_tab1(self):
         tab1 = ttk.Frame(self.notebook)
         self.notebook.add(tab1, text="Geometry and Mesh parameters")
-
         geometry = ttk.LabelFrame(tab1, text='Geometry')
         geometry.grid(column=0, row=1, padx=20, pady=20)
-
         Label(geometry, text="Cylinder radius (m)").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         Entry(geometry, textvariable=self.cyl_radius, width=22).grid(row=0, column=1, padx=10, pady=5)
-
         Label(geometry, text="Cylinder height (m)").grid(row=1, column=0, sticky="e", padx=5, pady=5)
         Entry(geometry, textvariable=self.cyl_height, width=22).grid(row=1, column=1, padx=10, pady=5)
-
         Label(geometry, text="Square side length (m)").grid(row=2, column=0, sticky="e", padx=5, pady=5)
         Entry(geometry, textvariable=self.sq_length, width=22).grid(row=2, column=1, padx=10, pady=5)
-
         Label(geometry, text="Square arc radius (m)").grid(row=3, column=0, sticky="e", padx=5, pady=5)
         Entry(geometry, textvariable=self.sq_radius, width=22).grid(row=3, column=1, padx=10, pady=5)
-
         mesh = LabelFrame(tab1, text="Mesh cells settings")
         mesh.grid(column=1, row=1, padx=20, pady=20)
-
         Label(mesh, text="Nb segs in square").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         Entry(mesh, textvariable=self.sq_segments, width=15).grid(row=0, column=1, padx=10, pady=5)
-
         Label(mesh, text="Nb segs for extrusion").grid(row=1, column=0, sticky="e", padx=5, pady=5)
         R3 = tk.Radiobutton(mesh, text="Auto", variable=self.mode_extrusion, value="Auto", command=self.update_entry_state)
         R3.grid(row=1, column=1, sticky="w", padx=5, pady=5)
@@ -166,21 +150,16 @@ class Mesh(Frame):
     def create_tab2(self):
         tab2 = ttk.Frame(self.notebook)
         self.notebook.add(tab2, text="File parameters")
-
         file_param = LabelFrame(tab2, text='File settings')
         file_param.grid(column=0, row=1, padx=20, pady=20)
-
         Label(file_param, text="File format").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         Label(file_param, text="File name").grid(row=1, column=0, sticky="e", padx=5, pady=5)
         Label(file_param, text="Output directory").grid(row=2, column=0, sticky="e", padx=5, pady=5)
-
         Entry(file_param, textvariable=self.file_name, width=22).grid(row=1, column=1, padx=10, pady=5)
         Button(file_param, text="Browse", command=self.browse).grid(row=2, column=1, padx=5, pady=10)
-
         combo = Combobox(file_param, values=self.file_format_list, textvariable=self.file_format, state='readonly')
         combo.grid(row=0, column=1, padx=10, pady=5)
         combo.current(0)
-
         Button(tab2, text="Generate Mesh", command=self.saveToml).grid(row=10, column=0, padx=5, pady=10)
 
     def browse(self):
@@ -200,6 +179,14 @@ class Mesh(Frame):
             missing.append("Square side length")
         if not self.sq_radius.get():
             missing.append("Square arc radius")
+        if not self.sq_segments.get():
+            missing.append("Nb segs in square")
+        if self.mode_extrusion.get() == "Custom" and not self.extrusion_value.get():
+            missing.append("Nb segs for extrusion")
+        if not self.file_name.get():
+            missing.append("File name")
+        if not self.output_dir.get():
+            missing.append("Output directory")
 
         if missing:
             showerror("Missing fields",
@@ -213,8 +200,7 @@ class Mesh(Frame):
             "Square arc radius": self.sq_radius.get(),
             "Nb segs in square": self.sq_segments.get(),
             "Nb segs for extrusion": self.extrusion_value.get() \
-                if self.mode_extrusion.get() == "Custom" else "0"
-        }
+                if self.mode_extrusion.get() == "Custom" else "0"}
 
         for name, value in numeric_fields.items():
             try:
