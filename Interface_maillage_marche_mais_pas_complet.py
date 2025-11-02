@@ -211,7 +211,9 @@ class Mesh(Frame):
             "Cylinder height": self.cyl_height.get(),
             "Square side length": self.sq_length.get(),
             "Square arc radius": self.sq_radius.get(),
-            "Nb segs in square": self.sq_segments.get()
+            "Nb segs in square": self.sq_segments.get(),
+            "Nb segs for extrusion": self.extrusion_value.get() \
+                if self.mode_extrusion.get() == "Custom" else "0"
         }
 
         for name, value in numeric_fields.items():
