@@ -1,3 +1,10 @@
+"""
+Interface to get parameters for mesh generation and save/load them from a TOML file.
+
+
+
+"""
+
 import tkinter as tk
 from tkinter import StringVar, Variable, Tk, LabelFrame, ttk, filedialog, Toplevel
 from tkinter.ttk import Button, Frame, Label, Entry, Combobox, Radiobutton
@@ -24,7 +31,6 @@ class Mesh(Frame):
         self.sq_segments = Variable()
         self.extrusion_value = Variable()
         self.mode_extrusion = StringVar(value="Auto")
-        self.mesh_type = StringVar()
         self.file_format_list = ["med", "unv", "stl"]
         self.file_format = StringVar()
         self.file_name = StringVar()
@@ -35,23 +41,18 @@ class Mesh(Frame):
     def first(self):
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Creation")
-
         creation = LabelFrame(tab, text="Option")
         creation.grid(column=1, row=1, padx=20, pady=20)
-
-        R1 = tk.Radiobutton(creation, text="Create new file", variable=self.choice,
+        R1 = Radiobutton(creation, text="Create new file", variable=self.choice,
                             value="create", command=self.update_browse_state)
         R1.grid(row=0, column=0, sticky="w", padx=5, pady=5)
-
-        R2 = tk.Radiobutton(creation, text="Load toml file", variable=self.choice,
+        R2 = Radiobutton(creation, text="Load toml file", variable=self.choice,
                             value="load", command=self.update_browse_state)
         R2.grid(row=1, column=0, sticky="w", padx=5, pady=5)
-
-        self.browse_btn = ttk.Button(creation, text="Browse",
+        self.browse_btn = Button(creation, text="Browse",
                                      command=self.load_toml_file, state="disabled")
         self.browse_btn.grid(row=1, column=1, padx=10, pady=5)
-
-        ttk.Button(tab, text="Validate", command=self.second_win).grid(row=10, column=1, padx=5, pady=10)
+        Button(tab, text="Validate", command=self.second_win).grid(row=10, column=1, padx=5, pady=10)
 
     def update_browse_state(self):
         """Active le bouton Browse uniquement si 'Load toml file' est sélectionné"""
@@ -69,7 +70,6 @@ class Mesh(Frame):
         self.sq_radius.set("")
         self.sq_segments.set("")
         self.extrusion_value.set("")
-        self.mesh_type.set("")
         self.file_name.set("")
         self.file_format.set("")
         self.output_dir.set("")
@@ -101,7 +101,6 @@ class Mesh(Frame):
         self.sq_radius.set(geom.get("Square arc radius", ""))
         self.sq_segments.set(mesh.get("Nb segments in square", ""))
         self.extrusion_value.set(mesh.get("Nb segments for extrusion", ""))
-        self.mesh_type.set(mesh.get("Mesh Fineness", ""))
         self.file_name.set(file_params.get("Filename", ""))
         self.file_format.set(file_params.get("File format", ""))
         self.output_dir.set(file_params.get("File directory", ""))
@@ -134,9 +133,9 @@ class Mesh(Frame):
         Label(mesh, text="Nb segs in square").grid(row=0, column=0, sticky="e", padx=5, pady=5)
         Entry(mesh, textvariable=self.sq_segments, width=15).grid(row=0, column=1, padx=10, pady=5)
         Label(mesh, text="Nb segs for extrusion").grid(row=1, column=0, sticky="e", padx=5, pady=5)
-        R3 = tk.Radiobutton(mesh, text="Auto", variable=self.mode_extrusion, value="Auto", command=self.update_entry_state)
+        R3 = Radiobutton(mesh, text="Auto", variable=self.mode_extrusion, value="Auto", command=self.update_entry_state)
         R3.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        R4 = tk.Radiobutton(mesh, text="Custom", variable=self.mode_extrusion, value="Custom", command=self.update_entry_state)
+        R4 = Radiobutton(mesh, text="Custom", variable=self.mode_extrusion, value="Custom", command=self.update_entry_state)
         R4.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         self.entry_custom = Entry(mesh, textvariable=self.extrusion_value, width=10, state="disabled")
         self.entry_custom.grid(row=2, column=3, padx=10, pady=5)
@@ -216,10 +215,8 @@ class Mesh(Frame):
         return True
 
     def saveToml(self):
-        
         if not self.validate_fields():
             return
-        
         self.getAllVars()
         folder = self.output_dir.get() or os.getcwd()
         filename = self.file_name.get() or "variables"
@@ -241,14 +238,12 @@ class Mesh(Frame):
         }
         self.geometry_params["Mesh"] = {
             "Nb segments in square": self.sq_segments.get(),
-            "Nb segments for extrusion": self.extrusion_value.get(),
-            "Mesh Fineness": self.mesh_type.get()
-        }
+            "For extrusion": self.mode_extrusion.get(),
+            "Nb segments for extrusion": self.extrusion_value.get()}
         self.geometry_params["File parameters"] = {
             "Filename": self.file_name.get(),
             "File format": self.file_format.get(),
-            "File directory": self.output_dir.get()
-        }
+            "File directory": self.output_dir.get()}
 
     def create_tab3(self):
         tab3 = ttk.Frame(self.notebook)
