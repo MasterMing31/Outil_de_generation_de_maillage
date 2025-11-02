@@ -10,6 +10,7 @@ from tkinter import StringVar, Variable, Tk, LabelFrame, ttk, filedialog, Toplev
 from tkinter.ttk import Button, Frame, Label, Entry, Combobox, Radiobutton
 from tkinter.messagebox import showinfo, showerror
 import toml, os
+import subprocess
 
 
 class Mesh(Frame):
@@ -225,6 +226,7 @@ class Mesh(Frame):
         with open(full_path, mode='w') as tomlFile:
             toml.dump(self.geometry_params, tomlFile)
         showinfo("Informations", f"Variables saved to:\n{full_path}")
+        self.run_salome_script()
 
     def getAllVars(self):
         info_authors = "MELNIC Dan-Christian & MORAG Gabriel"
@@ -252,6 +254,25 @@ class Mesh(Frame):
     def create_tab4(self):
         tab4 = ttk.Frame(self.notebook)
         self.notebook.add(tab4, text="Info")
+
+    
+    def run_salome_script(self):
+        """
+        Launch SALOME shell via its BAT file and run main.py inside it.
+        """
+        # Path to SALOME batch file
+        salome_bat = r"D:\SALOME\SALOME-9.15.0\run_salome_shell.bat"
+
+
+        cmd = f'cmd.exe /c "{salome_bat}'
+
+        try:
+            # Run it and wait until done
+            subprocess.run(cmd, shell=True)
+            print("SALOME main.py finished.")
+
+        except Exception as e:
+            print(f"Error running SALOME: {e}")
 
 
 if __name__ == "__main__":
